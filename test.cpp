@@ -115,7 +115,7 @@ int main() {
       }
     }
     else if (state == S1) {
-      if (ev.type==1) {
+      if (ev.type==1 && ev.value != repeated) {
         workingCode = ev.code;
         workingValue = ev.value;
         state = S2;
