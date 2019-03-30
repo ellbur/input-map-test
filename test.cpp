@@ -9,6 +9,15 @@
 #include <errno.h>
 #include <linux/input.h>
 #include <linux/uinput.h>
+#include <map>
+#include <set>
+#include <list>
+#include <boost/range/adaptor/reversed.hpp>
+
+using std::map;
+using std::set;
+using std::list;
+using boost::adaptors::reverse;
 
 #define die(n, str, args...) do { \
   perror(str); \
@@ -81,21 +90,82 @@ int main() {
   if (write(fdo, &uidev, sizeof(uidev)) < 0) die(9, "error: write");
   if (ioctl(fdo, UI_DEV_CREATE) < 0) die(10, "error: ioctl");
   
-  const int leftShift = 42;
-  const int rightShift = 54;
+  const int leftControl = 29;
   const int capsLock = 58;
+  const int myTabKey = 15;
 
   const int pressed = 1;
   const int released = 0;
   const int repeated = 2;
   
   bool movementDown = false;
-  bool shiftIsLastPressed = false;
 
+  struct Action {
+    list<int> keys;
+  };
+  
+  map<int, Action> movementMappings;
+  movementMappings[36] = { { 105 } };
+  movementMappings[37] = { { 108 } };
+  movementMappings[38] = { { 106 } };
+  movementMappings[23] = { { 103 } };
+  movementMappings[35] = { { 102 } };
+  movementMappings[39] = { { 107 } };
+  movementMappings[22] = { { 104 } };
+  movementMappings[50] = { { 109 } };
+  movementMappings[49] = { { leftControl, 105 } };
+  movementMappings[51] = { { leftControl, 106 } };
+  
+  set<int> nativePressedKeys;
+  set<int> ordinaryPressedKeys;
+  set<int> magicPressedKeys;
+  
+  auto press = [&](int code) {
+    sendFullSet(fdo, code, pressed);
+  };
+  
   auto release = [&](int code) {
     sendFullSet(fdo, code, released);
   };
-
+  
+  auto ordinaryPress = [&](int code) {
+    ordinaryPressedKeys.insert(code);
+    press(code);
+  };
+  
+  auto ordinaryRelease = [&](int code) {
+    ordinaryPressedKeys.erase(code);
+    if (! magicPressedKeys.count(code)) {
+      release(code);
+    }
+  };
+  
+  auto magicPress = [&](int code) {
+    magicPressedKeys.insert(code);
+    press(code);
+  };
+  
+  auto magicRelease = [&](int code) {
+    magicPressedKeys.erase(code);
+    if (! ordinaryPressedKeys.count(code)) {
+      release(code);
+    }
+  };
+  
+  auto applyAction = [&](int native, Action const& action) {
+    ordinaryRelease(native);
+    for (int key : action.keys) {
+      magicPress(key);
+    }
+  };
+  
+  auto unapplyAction = [&](int native, Action const& action) {
+    for (int key : reverse(action.keys)) {
+      magicRelease(key);
+    }
+    ordinaryPress(native);
+  };
+  
   enum {
     S0,
     S1,
@@ -126,99 +196,67 @@ int main() {
     }
     else if (state == S2) {
       if (ev.type==0 && ev.code==0 && ev.value==0) {
-        bool send = true;
-
-        if (workingCode==15) {
+        if (workingValue == pressed) {
+          nativePressedKeys.insert(workingCode);
+        }
+        else if (workingValue == released) {
+          nativePressedKeys.erase(workingCode);
+        }
+        
+        if (workingCode==myTabKey) {
           if (workingValue==pressed) {
-            if (!shiftIsLastPressed) {
-              release(leftShift);
-              release(rightShift);
+            for (int key : nativePressedKeys) {
+              if (movementMappings.count(key)) {
+                applyAction(key, movementMappings[key]);
+              }
             }
+            
             release(capsLock);
-
             movementDown = true;
-            send = false;
           }
           else if (workingValue==released) {
-            release(102);
-            release(103);
-            release(104);
-            release(105);
-            release(106);
-            release(107);
-            release(108);
+            for (int key : nativePressedKeys) {
+              if (movementMappings.count(key)) {
+                unapplyAction(key, movementMappings[key]);
+              }
+            }
             
             movementDown = false;
-            send = false;
-          }
-          else {
-            send = false;
           }
         }
-        
-        if (movementDown) {
-          if (workingCode==36) {
-            workingCode = 105;
-          }
-          else if (workingCode==37) {
-            workingCode = 108;
-          }
-          else if (workingCode==38) {
-            workingCode = 106;
-          }
-          else if (workingCode==23) {
-            workingCode = 103;
-          }
-          else if (workingCode==35) {
-            workingCode = 102;
-          }
-          else if (workingCode==39) {
-            workingCode = 107;
-          }
-          else if (workingCode==22) {
-            workingCode = 104;
-          }
-          else if (workingCode==50) {
-            workingCode = 109;
-          }
-          else if (workingCode==49) {
-            send = false;
-            if (workingValue == 1) {
-              sendFullSet(fdo, 29, 1);
-              sendFullSet(fdo, 105, 1);
+        else if (movementDown) {
+          if (workingValue == pressed) {
+            if (movementMappings.count(workingCode)) {
+              Action action = movementMappings[workingCode];
+              for (int key : action.keys) {
+                magicPress(key);
+              }
             }
-            else if (workingValue == 2) {
-              sendFullSet(fdo, 105, 2);
-            }
-            else if (workingValue == 0) {
-              sendFullSet(fdo, 105, 0);
-              sendFullSet(fdo, 29, 0);
+            else {
+              ordinaryPress(workingCode);
             }
           }
-          else if (workingCode==51) {
-            send = false;
-            if (workingValue == pressed) {
-              sendFullSet(fdo, 29, pressed);
-              sendFullSet(fdo, 106, pressed);
+          else if (workingValue == released) {
+            if (movementMappings.count(workingCode)) {
+              Action action = movementMappings[workingCode];
+              for (int key : reverse(action.keys)) {
+                magicRelease(key);
+              }
             }
-            else if (workingValue == repeated) {
-              sendFullSet(fdo, 106, repeated);
+            else {
+              ordinaryRelease(workingCode);
             }
-            else if (workingValue == released) {
-              sendFullSet(fdo, 106, released);
-              sendFullSet(fdo, 29, released);
-            }
+          }
+        }
+        else {
+          if (workingValue == pressed) {
+            ordinaryPress(workingCode);
+          }
+          else if (workingValue == released) {
+            ordinaryRelease(workingCode);
           }
         }
 
-        if (send) {
-          shiftIsLastPressed = (workingValue != released) && (
-               (workingCode == leftShift)
-            || (workingCode == rightShift));
-          
-          sendFullSet(fdo, workingCode, workingValue);
-        }
-        
         state = S0;
       }
     }
