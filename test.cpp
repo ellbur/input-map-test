@@ -159,11 +159,10 @@ int main() {
     }
   };
   
-  auto unapplyAction = [&](int native, Action const& action) {
+  auto swallowAction = [&](Action const& action) {
     for (int key : reverse(action.keys)) {
       magicRelease(key);
     }
-    ordinaryPress(native);
   };
   
   enum {
@@ -217,7 +216,7 @@ int main() {
           else if (workingValue==released) {
             for (int key : nativePressedKeys) {
               if (movementMappings.count(key)) {
-                unapplyAction(key, movementMappings[key]);
+                swallowAction(movementMappings[key]);
               }
             }
             
