@@ -2,13 +2,21 @@
 
 from scooter import *
 from scooter.gcc import build_gcc
+import argparse
 
 here = dirof(__file__)
 
-@build_main(here)
-def _(b):
+parser = argparse.ArgumentParser()
+parser.add_argument('file', metavar='FILE', type=str)
+args = parser.parse_args()
+
+b = BuildHere(here)
+
+try:
     sources = (
-        here/'./test.cpp',
+        here/'my-keyboard-layout.cpp',
+        here/'my-physical-keyboard.cpp',
+        p(args.file)
     )
     
     include = (
@@ -29,7 +37,11 @@ def _(b):
     
     cpp = 'g++'
     
-    bin = here/'./test'
+    bin = b.mkobj(sources, '')
     
     build_gcc(b, sources, bin, opts + include, gcc=cpp, libs=libs)
+    
+    easyruntty(bin)
+except:
+    pass
 
