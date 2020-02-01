@@ -22,7 +22,7 @@ int main() {
   int fdi;
   struct input_event ev;
 
-  fdi = open("/dev/input/event12", O_RDONLY);
+  fdi = open("/dev/input/by-path/platform-i8042-serio-0-event-kbd", O_RDONLY);
   if (fdi < 0) die(4, "error: open");
 
   while (true) {
