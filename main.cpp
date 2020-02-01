@@ -13,6 +13,8 @@
 #include <set>
 #include <list>
 #include <boost/range/adaptor/reversed.hpp>
+#include "my-physical-keyboard.hpp"
+#include "my-keyboard-layout.hpp"
 
 using std::map;
 using std::set;
