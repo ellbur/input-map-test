@@ -57,9 +57,13 @@ void sendFullSet(int fdo, int code, int value) {
   sendTypeCodeValue(fdo, 0, 0, 0);
 }
 
-int main() {
-  printf("Hello!!");
-  fflush(stdout);
+int main(int argc, char **argv) {
+  if (argc != 1 + 1) {
+    fprintf(stderr, "Usage: map-keyboard <input-file>\n");
+    return 1;
+  }
+  
+  string keyboardFilePath(argv[1]);
   
   int fdo, fdi;
   struct uinput_user_dev uidev;
@@ -68,7 +72,7 @@ int main() {
   fdo = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
   if (fdo < 0) die(3, "error: open");
 
-  fdi = open("/dev/input/by-path/platform-i8042-serio-0-event-kbd", O_RDONLY);
+  fdi = open(keyboardFilePath.c_str(), O_RDONLY);
   if (fdi < 0) die(4, "error: open");
 
   // This consumes the event so X doesn't use it.
