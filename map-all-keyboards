@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+from quickfiles import *
+from ellbureasyrun import easyrun_as_proc
+
+here = dirof(__file__)
+
+keyboard_files = p('/dev/input/by-path/') // '*kbd'
+for keyboard_file in keyboard_files:
+    easyrun_as_proc(here/'./map-keyboard', keyboard_file)
+
