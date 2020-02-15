@@ -8,7 +8,7 @@ here = dirof(__file__)
 @build_main(here)
 def _(b):
     sources = (
-        here/'./test.cpp',
+        here/'./main.cpp',
     )
     
     include = (
@@ -29,7 +29,7 @@ def _(b):
     
     cpp = 'g++'
     
-    bin = here/'./test'
+    bin = here/'./map-keyboard'
     
     build_gcc(b, sources, bin, opts + include, gcc=cpp, libs=libs)
 
