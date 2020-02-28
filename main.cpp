@@ -15,6 +15,8 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include "my-physical-keyboard.hpp"
 #include "my-keyboard-layout.hpp"
+#include <thread>
+#include <chrono>
 
 using std::map;
 using std::set;
@@ -178,7 +180,15 @@ int main(int argc, char **argv) {
   } state = S0;
   int workingCode = 0;
   int workingValue = 0;
-
+  
+  for (int i=0; i<3; i++) {
+    printf("Go %d\n", i);
+    fflush(stdout);
+    press(leftControl);
+    release(leftControl);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+  
   while (true) {
     if (read(fdi, &ev, sizeof(struct input_event)) < 0) {
       die(11, "error: read");
