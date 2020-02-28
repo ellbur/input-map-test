@@ -202,6 +202,11 @@ int main(int argc, char **argv) {
       if (ev.type==4 && ev.code==4) {
         state = S1;
       }
+      else if (ev.type==1 && ev.value != repeated) {
+        workingCode = ev.code;
+        workingValue = ev.value;
+        state = S2;
+      }
     }
     else if (state == S1) {
       if (ev.type==1 && ev.value != repeated) {
