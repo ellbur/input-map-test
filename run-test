@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from scooter import *
 from scooter.gcc import build_gcc
