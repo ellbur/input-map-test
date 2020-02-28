@@ -32,11 +32,15 @@ struct Grabbing {
   Grabbing(int fd) :
     fd(fd)
   {
-    ioctl(fd, EVIOCGRAB, 1);
+    if (ioctl(fd, EVIOCGRAB, 1)) {
+      die(1, "Failed to grab input device");
+    }
   }
 
   ~Grabbing() {
-    ioctl(fd, EVIOCGRAB, 0);
+    if (ioctl(fd, EVIOCGRAB, 0)) {
+      die(1, "Failed to ungrab input device");
+    }
   }
 
   private:
