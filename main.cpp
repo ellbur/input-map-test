@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
   const int leftControl = 29;
   const int capsLock = 58;
   const int myTabKey = 15;
+  const int backslash = 43;
 
   const int pressed = 1;
   const int released = 0;
@@ -273,11 +274,16 @@ int main(int argc, char **argv) {
           }
         }
         else {
+	  int codeToSend = workingCode;
+	  if (workingCode == backslash) {
+	    codeToSend = myTabKey;
+	  }
+
           if (workingValue == pressed) {
-            ordinaryPress(workingCode);
+            ordinaryPress(codeToSend);
           }
           else if (workingValue == released) {
-            ordinaryRelease(workingCode);
+            ordinaryRelease(codeToSend);
           }
         }
 
