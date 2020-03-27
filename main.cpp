@@ -44,7 +44,7 @@ struct Grabbing {
   }
 
   private:
-    int fd;
+  int fd;
 };
 
 void sendTypeCodeValue(int fdo, int type, int code, int value) {
@@ -68,9 +68,9 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Usage: map-keyboard <input-file>\n");
     return 1;
   }
-  
+
   string keyboardFilePath(argv[1]);
-  
+
   int fdo, fdi;
   struct uinput_user_dev uidev;
   struct input_event ev;
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 
   if (write(fdo, &uidev, sizeof(uidev)) < 0) die(9, "error: write");
   if (ioctl(fdo, UI_DEV_CREATE) < 0) die(10, "error: ioctl");
-  
+
   const int leftControl = 29;
   const int capsLock = 58;
   const int myTabKey = 15;
@@ -110,13 +110,13 @@ int main(int argc, char **argv) {
   const int pressed = 1;
   const int released = 0;
   const int repeated = 2;
-  
+
   bool movementDown = false;
 
   struct Action {
     list<int> keys;
   };
-  
+
   map<int, Action> movementMappings;
   movementMappings[36] = { { 105 } };
   movementMappings[37] = { { 108 } };
@@ -128,56 +128,56 @@ int main(int argc, char **argv) {
   movementMappings[50] = { { 109 } };
   movementMappings[49] = { { leftControl, 105 } };
   movementMappings[51] = { { leftControl, 106 } };
-  
+
   set<int> nativePressedKeys;
   set<int> ordinaryPressedKeys;
   set<int> magicPressedKeys;
-  
+
   auto press = [&](int code) {
     sendFullSet(fdo, code, pressed);
   };
-  
+
   auto release = [&](int code) {
     sendFullSet(fdo, code, released);
   };
-  
+
   auto ordinaryPress = [&](int code) {
     ordinaryPressedKeys.insert(code);
     press(code);
   };
-  
+
   auto ordinaryRelease = [&](int code) {
     ordinaryPressedKeys.erase(code);
     if (! magicPressedKeys.count(code)) {
       release(code);
     }
   };
-  
+
   auto magicPress = [&](int code) {
     magicPressedKeys.insert(code);
     press(code);
   };
-  
+
   auto magicRelease = [&](int code) {
     magicPressedKeys.erase(code);
     if (! ordinaryPressedKeys.count(code)) {
       release(code);
     }
   };
-  
+
   auto applyAction = [&](int native, Action const& action) {
     ordinaryRelease(native);
     for (int key : action.keys) {
       magicPress(key);
     }
   };
-  
+
   auto swallowAction = [&](Action const& action) {
     for (int key : reverse(action.keys)) {
       magicRelease(key);
     }
   };
-  
+
   enum {
     S0,
     S1,
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
   } state = S0;
   int workingCode = 0;
   int workingValue = 0;
-  
+
   for (int i=0; i<3; i++) {
     printf("Go %d\n", i);
     fflush(stdout);
@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
     release(leftControl);
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
-  
+
   while (true) {
     if (read(fdi, &ev, sizeof(struct input_event)) < 0) {
       die(11, "error: read");
@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
         else if (workingValue == released) {
           nativePressedKeys.erase(workingCode);
         }
-        
+
         if (workingCode==myTabKey) {
           if (workingValue==pressed) {
             for (int key : nativePressedKeys) {
@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
                 applyAction(key, movementMappings[key]);
               }
             }
-            
+
             release(capsLock);
             movementDown = true;
           }
@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
                 swallowAction(movementMappings[key]);
               }
             }
-            
+
             movementDown = false;
           }
         }
@@ -274,10 +274,10 @@ int main(int argc, char **argv) {
           }
         }
         else {
-	  int codeToSend = workingCode;
-	  if (workingCode == backslash) {
-	    codeToSend = myTabKey;
-	  }
+          int codeToSend = workingCode;
+          if (workingCode == backslash) {
+            codeToSend = myTabKey;
+          }
 
           if (workingValue == pressed) {
             ordinaryPress(codeToSend);
