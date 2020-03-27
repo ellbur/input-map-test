@@ -15,14 +15,19 @@
   exit(n); \
 } while(0)
 
-int main() {
-  printf("Hello!!\n");
-  fflush(stdout);
+int main(int argc, char **argv) {
+  if (argc != 1 + 1) {
+    fprintf(stderr, "Usage: see-codes <dev>\n");
+    fflush(stderr);
+    return 1;
+  }
+  
+  char const* path = argv[1];
   
   int fdi;
   struct input_event ev;
 
-  fdi = open("/dev/input/event0", O_RDONLY);
+  fdi = open(path, O_RDONLY);
   if (fdi < 0) {
     die(4, "error: open");
   }
