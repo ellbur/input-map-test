@@ -29,6 +29,7 @@ using std::set;
 using std::list;
 using boost::adaptors::reverse;
 using nlohmann::json;
+using std::string;
 using std::cout;
 using std::cerr;
 using boost::program_options::options_description;
@@ -36,6 +37,8 @@ using boost::program_options::positional_options_description;
 using boost::program_options::command_line_parser;
 using boost::program_options::variables_map;
 using boost::program_options::store;
+using boost::program_options::bool_switch;
+using boost::program_options::value;
 
 #define die(n, str, args...) do { \
   perror(str); \
@@ -69,38 +72,22 @@ void sendTypeCodeValue(int fdo, int type, int code, int value) {
   ev2.code = code;
   ev2.value = value;
   write(fdo, &ev2, sizeof(struct input_event));
-  {
-    json j;
-    j["type"] = "out";
-    json data;
-    data["type"] = type;
-    data["code"] = code;
-    data["value"] = value;
-    j["data"] = data;
-    cout << j << "\n"; cout.flush();
-  }
 }
 
 void sendFullSet(int fdo, int code, int value) {
-  {
-    json j;
-    j["type"] = "out-action";
-    json data;
-    data["code"] = code;
-    data["value"] = value;
-    j["data"] = data;
-    cout << j << "\n"; cout.flush();
-  }
   sendTypeCodeValue(fdo, 4, 4, code);
   sendTypeCodeValue(fdo, 1, code, value);
   sendTypeCodeValue(fdo, 0, 0, 0);
 }
 
 int main(int argc, char **argv) {
+  bool trace;
+  
   options_description optsDesc("Options");
   optsDesc.add_options()
       ("help", "Display usage")
-      ("trace", "Print JSON info describing behavior")
+      ("trace", bool_switch(&trace), "Print JSON info describing behavior")
+      ("kbd-file", value<string>(), "Keyboard device under /dev/input")
     ;
   
   positional_options_description posOpts;
@@ -116,9 +103,14 @@ int main(int argc, char **argv) {
   store(parsed, optionsMap);
   
   if (optionsMap.count("help")) {
-    fprintf(stderr, "Usage: map-keyboard <input-file>\n");
+    fprintf(stderr, "Usage: map-keyboard [OPTIONS] <kbd-file>\n");
     cerr << optsDesc;
     return 0;
+  }
+  else if (optionsMap.count("kbd-file") == 0) {
+    fprintf(stderr, "Usage: map-keyboard [OPTIONS] <kbd-file>\n");
+    cerr << optsDesc;
+    return 1;
   }
   
   string keyboardFilePath = optionsMap["kbd-file"].as<string>();
@@ -186,7 +178,7 @@ int main(int argc, char **argv) {
   set<int> magicPressedKeys;
 
   auto press = [&](int code) {
-    {
+    if (trace) {
       json j;
       j["type"] = "out-press";
       json data;
@@ -198,7 +190,7 @@ int main(int argc, char **argv) {
   };
 
   auto release = [&](int code) {
-    {
+    if (trace) {
       json j;
       j["type"] = "out-release";
       json data;
@@ -260,7 +252,7 @@ int main(int argc, char **argv) {
       die(11, "error: read");
     }
     
-    {
+    if (trace) {
       json j;
       j["type"] = "in";
       json data;
@@ -275,7 +267,7 @@ int main(int argc, char **argv) {
       workingCode = ev.code;
       workingValue = ev.value;
       
-      {
+      if (trace) {
         json j;
         j["type"] = "in-action";
         json data;
@@ -352,7 +344,7 @@ int main(int argc, char **argv) {
       }
     }
     
-    {
+    if (trace) {
       json j;
       j["type"] = "loop-end";
       cout << j << "\n"; cout.flush();

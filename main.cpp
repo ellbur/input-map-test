@@ -17,11 +17,28 @@
 #include "my-keyboard-layout.hpp"
 #include <thread>
 #include <chrono>
+#include "third-party/json.hpp"
+#include <iostream>
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/positional_options.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
 
 using std::map;
 using std::set;
 using std::list;
 using boost::adaptors::reverse;
+using nlohmann::json;
+using std::string;
+using std::cout;
+using std::cerr;
+using boost::program_options::options_description;
+using boost::program_options::positional_options_description;
+using boost::program_options::command_line_parser;
+using boost::program_options::variables_map;
+using boost::program_options::store;
+using boost::program_options::bool_switch;
+using boost::program_options::value;
 
 #define die(n, str, args...) do { \
   perror(str); \
@@ -64,12 +81,39 @@ void sendFullSet(int fdo, int code, int value) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 1 + 1) {
-    fprintf(stderr, "Usage: map-keyboard <input-file>\n");
+  bool trace;
+  
+  options_description optsDesc("Options");
+  optsDesc.add_options()
+      ("help", "Display usage")
+      ("trace", bool_switch(&trace), "Print JSON info describing behavior")
+      ("kbd-file", value<string>(), "Keyboard device under /dev/input")
+    ;
+  
+  positional_options_description posOpts;
+  posOpts.add("kbd-file", 1);
+  
+  auto parsed =
+    command_line_parser(argc, argv)
+      .options(optsDesc)
+      .positional(posOpts)
+      .run();
+  
+  variables_map optionsMap;
+  store(parsed, optionsMap);
+  
+  if (optionsMap.count("help")) {
+    fprintf(stderr, "Usage: map-keyboard [OPTIONS] <kbd-file>\n");
+    cerr << optsDesc;
+    return 0;
+  }
+  else if (optionsMap.count("kbd-file") == 0) {
+    fprintf(stderr, "Usage: map-keyboard [OPTIONS] <kbd-file>\n");
+    cerr << optsDesc;
     return 1;
   }
-
-  string keyboardFilePath(argv[1]);
+  
+  string keyboardFilePath = optionsMap["kbd-file"].as<string>();
 
   int fdo, fdi;
   struct uinput_user_dev uidev;
@@ -109,7 +153,7 @@ int main(int argc, char **argv) {
 
   const int pressed = 1;
   const int released = 0;
-  const int repeated = 2;
+  //const int repeated = 2;
 
   bool movementDown = false;
 
@@ -134,10 +178,26 @@ int main(int argc, char **argv) {
   set<int> magicPressedKeys;
 
   auto press = [&](int code) {
+    if (trace) {
+      json j;
+      j["type"] = "out-press";
+      json data;
+      data["code"] = code;
+      j["data"] = data;
+      cout << j << "\n"; cout.flush();
+    }
     sendFullSet(fdo, code, pressed);
   };
 
   auto release = [&](int code) {
+    if (trace) {
+      json j;
+      j["type"] = "out-release";
+      json data;
+      data["code"] = code;
+      j["data"] = data;
+      cout << j << "\n"; cout.flush();
+    }
     sendFullSet(fdo, code, released);
   };
 
@@ -178,17 +238,10 @@ int main(int argc, char **argv) {
     }
   };
 
-  enum {
-    S0,
-    S1,
-    S2
-  } state = S0;
   int workingCode = 0;
   int workingValue = 0;
 
   for (int i=0; i<3; i++) {
-    printf("Go %d\n", i);
-    fflush(stdout);
     press(leftControl);
     release(leftControl);
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -198,97 +251,103 @@ int main(int argc, char **argv) {
     if (read(fdi, &ev, sizeof(struct input_event)) < 0) {
       die(11, "error: read");
     }
+    
+    if (trace) {
+      json j;
+      j["type"] = "in";
+      json data;
+      data["type"] = ev.type;
+      data["code"] = ev.code;
+      data["value"] = ev.value;
+      j["data"] = data;
+      cout << j << "\n"; cout.flush();
+    }
 
-    if (state == S0) {
-      if (ev.type==4 && ev.code==4) {
-        state = S1;
+    if (ev.type==1) {
+      workingCode = ev.code;
+      workingValue = ev.value;
+      
+      if (trace) {
+        json j;
+        j["type"] = "in-action";
+        json data;
+        data["code"] = workingCode;
+        data["value"] = workingValue;
+        j["data"] = data;
+        cout << j << "\n"; cout.flush();
       }
-      else if (ev.type==1 && ev.value != repeated) {
-        workingCode = ev.code;
-        workingValue = ev.value;
-        state = S2;
+      
+      if (workingValue == pressed) {
+        nativePressedKeys.insert(workingCode);
       }
-    }
-    else if (state == S1) {
-      if (ev.type==1 && ev.value != repeated) {
-        workingCode = ev.code;
-        workingValue = ev.value;
-        state = S2;
+      else if (workingValue == released) {
+        nativePressedKeys.erase(workingCode);
       }
-      else {
-        state = S0;
+
+      if (workingCode==myTabKey) {
+        if (workingValue==pressed) {
+          for (int key : nativePressedKeys) {
+            if (movementMappings.count(key)) {
+              applyAction(key, movementMappings[key]);
+            }
+          }
+
+          release(capsLock);
+          movementDown = true;
+        }
+        else if (workingValue==released) {
+          for (int key : nativePressedKeys) {
+            if (movementMappings.count(key)) {
+              swallowAction(movementMappings[key]);
+            }
+          }
+
+          movementDown = false;
+        }
       }
-    }
-    else if (state == S2) {
-      if (ev.type==0 && ev.code==0 && ev.value==0) {
+      else if (movementDown) {
         if (workingValue == pressed) {
-          nativePressedKeys.insert(workingCode);
+          if (movementMappings.count(workingCode)) {
+            Action action = movementMappings[workingCode];
+            for (int key : action.keys) {
+              magicPress(key);
+            }
+          }
+          else {
+            ordinaryPress(workingCode);
+          }
         }
         else if (workingValue == released) {
-          nativePressedKeys.erase(workingCode);
-        }
-
-        if (workingCode==myTabKey) {
-          if (workingValue==pressed) {
-            for (int key : nativePressedKeys) {
-              if (movementMappings.count(key)) {
-                applyAction(key, movementMappings[key]);
-              }
+          if (movementMappings.count(workingCode)) {
+            Action action = movementMappings[workingCode];
+            for (int key : reverse(action.keys)) {
+              magicRelease(key);
             }
-
-            release(capsLock);
-            movementDown = true;
           }
-          else if (workingValue==released) {
-            for (int key : nativePressedKeys) {
-              if (movementMappings.count(key)) {
-                swallowAction(movementMappings[key]);
-              }
-            }
-
-            movementDown = false;
+          else {
+            ordinaryRelease(workingCode);
           }
         }
-        else if (movementDown) {
-          if (workingValue == pressed) {
-            if (movementMappings.count(workingCode)) {
-              Action action = movementMappings[workingCode];
-              for (int key : action.keys) {
-                magicPress(key);
-              }
-            }
-            else {
-              ordinaryPress(workingCode);
-            }
-          }
-          else if (workingValue == released) {
-            if (movementMappings.count(workingCode)) {
-              Action action = movementMappings[workingCode];
-              for (int key : reverse(action.keys)) {
-                magicRelease(key);
-              }
-            }
-            else {
-              ordinaryRelease(workingCode);
-            }
-          }
-        }
-        else {
-          int codeToSend = workingCode;
-          if (workingCode == backslash) {
-            codeToSend = myTabKey;
-          }
-
-          if (workingValue == pressed) {
-            ordinaryPress(codeToSend);
-          }
-          else if (workingValue == released) {
-            ordinaryRelease(codeToSend);
-          }
-        }
-
-        state = S0;
       }
+      else {
+        int codeToSend = workingCode;
+        if (workingCode == backslash) {
+          codeToSend = myTabKey;
+        }
+
+        if (workingValue == pressed) {
+          ordinaryPress(codeToSend);
+        }
+        else if (workingValue == released) {
+          ordinaryRelease(codeToSend);
+        }
+      }
+    }
+    
+    if (trace) {
+      json j;
+      j["type"] = "loop-end";
+      cout << j << "\n"; cout.flush();
     }
   }
 

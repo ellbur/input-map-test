@@ -25,6 +25,7 @@ def _(b):
     )
     
     libs = (
+        '-lboost_program_options',
     )
     
     cpp = 'g++'
