@@ -52,5 +52,7 @@ MyKeyboardLayout::MyKeyboardLayout() :
   layout.tilde = CodeLayoutKey { 125 };
   layout.tildeShift = CodeLayoutKey { 125 };
   layout.tildeAltGr = CodeLayoutKey { 125 };
+  
+  layout.qRowAltGr[0] = CodeLayoutKey { 1 };
 }
 

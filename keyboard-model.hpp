@@ -22,6 +22,7 @@ struct PhysicalLayout {
   int qCode;
   int aCode;
   int zCode;
+  int backslashCode;
   map<char, PhysRevKey> keys;
 };
 

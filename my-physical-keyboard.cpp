@@ -10,12 +10,12 @@ using std::optional;
 using std::map;
 
 const string phys_1_row = "1234567890-=";
-const string phys_q_row = "qwertyuiop[]\\";
+const string phys_q_row = "qwertyuiop[]";
 const string phys_a_row = "asdfghjkl;'";
 const string phys_z_row = "zxcvbnm,./";
 
 const string phys_1_row_shift = "!@#$%^&*()_+";
-const string phys_q_row_shift = "QWERTYUIOP{}|";
+const string phys_q_row_shift = "QWERTYUIOP{}";
 const string phys_a_row_shift = "ASDFGHJKL:\"";
 const string phys_z_row_shift = "ZXCVBNM<>?";
 
@@ -29,9 +29,11 @@ MyPhysicalKeyboard::MyPhysicalKeyboard() :
   layout()
 {
   layout.tildeCode = key_tilde;
+  layout.k1Code = key_1;
   layout.qCode = key_q;
   layout.aCode = key_a;
   layout.zCode = key_z;
+  layout.backslashCode = 43;
   
   auto addRow = [&](int codeStart, string const& chars, bool shift) {
     for (size_t i=0; i<chars.length(); i++) {
@@ -53,5 +55,8 @@ MyPhysicalKeyboard::MyPhysicalKeyboard() :
   
   layout.keys['`'] = PhysRevKey { key_tilde, false };
   layout.keys['~'] = PhysRevKey { key_tilde, true };
+  
+  layout.keys['\\'] = PhysRevKey { 43, false };
+  layout.keys['|'] = PhysRevKey { 43, true };
 }
 
