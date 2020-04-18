@@ -1,6 +1,4 @@
 
-// http://stackoverflow.com/questions/27581500/hook-into-linux-key-event-handling/27693340#27693340
-
 #include <iostream>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/positional_options.hpp>
