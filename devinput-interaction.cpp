@@ -1,4 +1,6 @@
 
+// http://stackoverflow.com/questions/27581500/hook-into-linux-key-event-handling/27693340#27693340
+
 #include "devinput-interaction.hpp"
 
 #include <unistd.h>
