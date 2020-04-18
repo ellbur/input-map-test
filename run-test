@@ -15,6 +15,7 @@ b = BuildHere(here)
 sources = (
     here/'my-keyboard-layout.cpp',
     here/'my-physical-keyboard.cpp',
+    here/'map-joining.cpp',
     p(args.file)
 )
 

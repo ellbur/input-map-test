@@ -1,39 +1,56 @@
 
 #include "my-keyboard-layout.hpp"
-#include "my-keyboard-layout.hpp"
 
-#include <iostream>
-using std::cout;
+#include <string>
+using std::string;
 
-MyBasicMappings::MyBasicMappings(PhysKeyboardRevMap const& revMap) :
-  mappings()
+const string my_top_row = "17531902468`";
+const string my_q_row = ";,.pyfgcrl~@";
+const string my_a_row = "aoeuidhtns-";
+const string my_z_row = "'qjkxbmwvz";
+
+const string my_top_row_shift = "";
+const string my_q_row_shift = ":<>PYFGCRL?^";
+const string my_a_row_shift = "AOEUIDHTNS@";
+const string my_z_row_shift = "\"QJKXBMWVZ";
+
+const string my_top_row_altgr = "";
+const string my_q_row_altgr = " {}% \\*][|  ";
+const string my_a_row_altgr = "   = &)(/_$";
+const string my_z_row_altgr = "     !+#  ";
+
+MyKeyboardLayout::MyKeyboardLayout() :
+  layout()
 {
-  addRow(revMap, key_top, my_top_row, false, false);
-  addRow(revMap, key_q, my_q_row, false, false);
-  addRow(revMap, key_a, my_a_row, false, false);
-  addRow(revMap, key_z, my_z_row, false, false);
-  
-  addRow(revMap, key_top, my_top_row_shift, true, false);
-  addRow(revMap, key_q, my_q_row_shift, true, false);
-  addRow(revMap, key_a, my_a_row_shift, true, false);
-  addRow(revMap, key_z, my_z_row_shift, true, false);
-}
-
-void MyBasicMappings::addRow(PhysKeyboardRevMap const& revMap, int codeStart, string const& chars, bool hasShift, bool hasAltGR) {
-  for (size_t i=0; i<chars.length(); i++) {
-    char c = chars[i];
-    if (c != ' ') {
-      int sourceCode = codeStart + i;
-      TypedKey tk { sourceCode, hasShift, hasAltGR };
-      optional<PhysRevKey> rk = revMap.charToKey(c);
-      
-      if (rk) {
-        mappings[tk] = *rk;
+  auto addToRow = [&](vector<LayoutKey> &row, string const& chars) {
+    for (size_t i=0; i<chars.size(); i++) {
+      char c = chars[i];
+      if (c == ' ') {
+        row.push_back(NullLayoutKey { });
       }
       else {
-        cout << "No physical mapping for char " << c << "(" << (int)c << ")" << "\n"; cout.flush();
+        row.push_back(CharLayoutKey { c });
       }
     }
-  }
+  };
+  
+  addToRow(layout.k1Row, my_top_row);
+  addToRow(layout.qRow, my_q_row);
+  addToRow(layout.aRow, my_a_row);
+  addToRow(layout.zRow, my_z_row);
+  
+  addToRow(layout.k1RowShift, my_top_row_shift);
+  addToRow(layout.qRowShift, my_q_row_shift);
+  addToRow(layout.aRowShift, my_a_row_shift);
+  addToRow(layout.zRowShift, my_z_row_shift);
+  
+  addToRow(layout.k1RowAltGr, my_top_row_altgr);
+  addToRow(layout.qRowAltGr, my_q_row_altgr);
+  addToRow(layout.aRowAltGr, my_a_row_altgr);
+  addToRow(layout.zRowAltGr, my_z_row_altgr);
+  
+  layout.tilde = CodeLayoutKey { 125 };
+  layout.tildeShift = CodeLayoutKey { 125 };
+  layout.tildeAltGr = CodeLayoutKey { 125 };
 }
 

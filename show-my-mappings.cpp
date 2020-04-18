@@ -1,5 +1,8 @@
 
 #include "my-keyboard-layout.hpp"
+#include "my-physical-keyboard.hpp"
+#include "map-joining.hpp"
+
 #include <iostream>
 
 using std::pair;
@@ -16,23 +19,21 @@ string b2s(bool b) {
 }
 
 int main() {
-  PhysKeyboardRevMap revMap;
-
-  //map<char, PhysRevKey> &keys = revMap.keys;
-  //for (pair<char, PhysRevKey> key : keys) {
-  //  char c = key.first;
-  //  PhysRevKey t = key.second;
-  //  
-  //  cout << c << " " << t.keyCode << "[" << b2s(t.needsShift) << "]\n";
-  //}
+  MyKeyboardLayout layout;
+  MyPhysicalKeyboard phys;
   
-  MyBasicMappings mbm(revMap);
+  FullMappingSet full = joinMappings(phys.layout, layout.layout);
   
-  for (pair<TypedKey, PhysRevKey> m : mbm.mappings) {
+  for (pair<TypedKey, optional<PhysRevKey>> m : full.mappings) {
     TypedKey f = m.first;
-    PhysRevKey t = m.second;
+    optional<PhysRevKey> t = m.second;
     
-    cout << f.code << "[" << f.shift << "][" << f.altGR << "]" " -> " << t.keyCode << "[" << b2s(t.needsShift) << "]" << "\n";
+    if (t) {
+      cout << f.code << "[" << f.shift << "][" << f.altGR << "]" " -> " << t->keyCode << "[" << b2s(t->needsShift) << "]" << "\n";
+    }
+    else {
+      cout << f.code << "[" << f.shift << "][" << f.altGR << "]" " -> ()\n";
+    }
   }
 }
 
