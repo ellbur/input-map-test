@@ -14,7 +14,7 @@ const string phys_q_row = "qwertyuiop[]\\";
 const string phys_a_row = "asdfghjkl;'";
 const string phys_z_row = "zxcvbnm,./";
 
-const string phys_1_row_shift = "~!@#$%^&*()_+";
+const string phys_1_row_shift = "!@#$%^&*()_+";
 const string phys_q_row_shift = "QWERTYUIOP{}|";
 const string phys_a_row_shift = "ASDFGHJKL:\"";
 const string phys_z_row_shift = "ZXCVBNM<>?";
