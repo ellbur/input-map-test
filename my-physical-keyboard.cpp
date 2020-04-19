@@ -34,6 +34,7 @@ MyPhysicalKeyboard::MyPhysicalKeyboard() :
   layout.aCode = key_a;
   layout.zCode = key_z;
   layout.backslashCode = 43;
+  layout.leftWinCode = 125;
   
   auto addRow = [&](int codeStart, string const& chars, bool shift) {
     for (size_t i=0; i<chars.length(); i++) {

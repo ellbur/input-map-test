@@ -23,6 +23,7 @@ struct PhysicalLayout {
   int aCode;
   int zCode;
   int backslashCode;
+  int leftWinCode;
   map<char, PhysRevKey> keys;
 };
 
@@ -36,6 +37,8 @@ struct KeyboardLayout {
   LayoutKey tilde;
   LayoutKey tildeShift;
   LayoutKey tildeAltGr;
+  
+  LayoutKey leftWin;
   
   vector<LayoutKey> k1Row;
   vector<LayoutKey> qRow;

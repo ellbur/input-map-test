@@ -66,8 +66,9 @@ int main(int argc, char **argv) {
   const int rightShift = 54;
   const int rightAlt = 100;
   const int capsLock = 58;
+  const int leftWin = 125;
   
-  RemappingHander remapping(full, { leftShift, rightShift }, { rightAlt, capsLock });
+  RemappingHander remapping(full, { leftShift, rightShift }, { rightAlt, capsLock, leftWin });
   BasicMovementLoop movement;
   
   runDevInputLoop(keyboardFilePath, "send_b", trace, [&](DevInputEvent const& ev) {

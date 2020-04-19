@@ -38,6 +38,10 @@ FullMappingSet joinMappings(PhysicalLayout const& phys, KeyboardLayout const& la
   map({ phys.tildeCode, true, false }, layout.tildeShift);
   map({ phys.tildeCode, false, true }, layout.tildeAltGr);
   
+  map({ phys.leftWinCode, false, false }, layout.leftWin);
+  map({ phys.leftWinCode, true, false }, layout.leftWin);
+  map({ phys.leftWinCode, false, true }, layout.leftWin);
+  
   addRow(phys.k1Code, layout.k1Row, false, false);
   addRow(phys.qCode, layout.qRow, false, false);
   addRow(phys.aCode, layout.aRow, false, false);
