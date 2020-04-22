@@ -24,12 +24,10 @@ using boost::program_options::bool_switch;
 using boost::program_options::value;
 
 int main(int argc, char **argv) {
-  bool trace = false;
-  
   options_description optsDesc("Options");
   optsDesc.add_options()
       ("help", "Display usage")
-      ("trace", bool_switch(&trace), "Print JSON info describing behavior")
+      ("trace", bool_switch(), "Print JSON info describing behavior")
       ("kbd-file", value<string>(), "Keyboard device under /dev/input")
     ;
   
@@ -44,6 +42,8 @@ int main(int argc, char **argv) {
   variables_map optionsMap;
   store(parsed, optionsMap);
   
+  bool trace = optionsMap["trace"].as<bool>();
+
   if (optionsMap.count("help")) {
     fprintf(stderr, "Usage: map-keyboard [OPTIONS] <kbd-file>\n");
     cerr << optsDesc;
