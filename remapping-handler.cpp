@@ -5,10 +5,11 @@
 
 using std::pair;
 
-RemappingHander::RemappingHander(FullMappingSet mappings, set<int> shiftKeys, set<int> altGrKeys) :
+RemappingHander::RemappingHander(FullMappingSet mappings, set<int> shiftKeys, set<int> altGrKeys, set<int> otherModifierKeys) :
   mappings(mappings),
   shiftKeys(shiftKeys),
   altGrKeys(altGrKeys),
+	otherModifierKeys(otherModifierKeys),
   inPressedKeys(),
   outPressedKeys(),
   outPressedModifiers()
@@ -56,16 +57,23 @@ list<DevInputEvent> RemappingHander::handle(DevInputEvent const& ev) {
   }
   
   set<int> newOutPressedKeys;
+  set<int> newOutPressedModifiers;
   bool needsShift = false;
   bool needsNoShift = false;
   
   for (pair<int, optional<PhysRevKey>> p : inPressedKeys) {
     optional<PhysRevKey> rev = p.second;
     if (rev) {
-      newOutPressedKeys.insert(rev->keyCode);
-      needsShift = needsShift || rev->needsShift;
-      needsNoShift = needsNoShift || !rev->needsShift;
-    }
+			int k = rev->keyCode;
+			if (shiftKeys.count(k) || altGrKeys.count(k) || otherModifierKeys.count(k)) {
+				newOutPressedModifiers.insert(k);
+			}
+			else {
+				newOutPressedKeys.insert(k);
+				needsShift = needsShift || rev->needsShift;
+				needsNoShift = needsNoShift || !rev->needsShift;
+			}
+		}
   }
   
   shiftDown = false;
@@ -75,7 +83,6 @@ list<DevInputEvent> RemappingHander::handle(DevInputEvent const& ev) {
     }
   }
   
-  set<int> newOutPressedModifiers;
   if (needsShift && needsNoShift) {
     // We have a conflict. Type nothing!
     newOutPressedKeys.clear();
