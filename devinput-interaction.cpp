@@ -1,5 +1,9 @@
 
 // http://stackoverflow.com/questions/27581500/hook-into-linux-key-event-handling/27693340#27693340
+ 
+// vim: tabstop=2
+// vim: shiftwidth=2
+// vim: expandtab
 
 #include "devinput-interaction.hpp"
 
@@ -9,6 +13,7 @@
 #include <linux/input.h>
 #include <linux/uinput.h>
 #include <string.h>
+#include <memory>
 
 #include <iostream>
 #include <stdexcept>
@@ -17,6 +22,9 @@
 
 using nlohmann::json;
 using std::cout;
+using std::cerr;
+using std::unique_ptr;
+using std::make_unique;
 
 #define die(str) do { \
   perror(str); \
@@ -73,7 +81,7 @@ void runDevInputLoop(string const& inDevPath, string const& outDevName, bool pri
   }
 
   // This consumes the event so X doesn't use it.
-  Grabbing grabbing(fdi);
+  unique_ptr<Grabbing> grabbing = make_unique<Grabbing>(fdi);
 
   if (ioctl(fdo, UI_SET_EVBIT, EV_SYN) < 0) die("error: ioctl");
   if (ioctl(fdo, UI_SET_EVBIT, EV_KEY) < 0) die("error: ioctl");
@@ -101,9 +109,36 @@ void runDevInputLoop(string const& inDevPath, string const& outDevName, bool pri
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
   
+  int numReadFailures = 0;
+  
   while (true) {
     if (read(fdi, &ev, sizeof(struct input_event)) < 0) {
-      die("error: read");
+			if (errno == ENODEV) {
+        numReadFailures += 1;
+        cerr << "read: no device. Will try again.\n";
+        grabbing = NULL;
+        close(fdi);
+        while (true) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(100 * (numReadFailures + 1)));
+          fdi = open(inDevPath.c_str(), O_RDONLY);
+          if (fdi > 0) {
+            grabbing = make_unique<Grabbing>(fdi); 
+            cerr << "Reconnected.\n";
+            break;
+          }
+          else {
+            perror("Failed to open device");
+            cerr << "Failed to reconnect. Will try again.\n";
+            numReadFailures += 1;
+          }
+        }
+			}
+			else {
+				die("error: read");
+			}
+    }
+    else {
+      numReadFailures = 0;
     }
     
     if (printDiagnostics) {
