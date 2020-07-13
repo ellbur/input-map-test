@@ -9,7 +9,7 @@ const string my_q_row = ";,.pyfgcrl~@";
 const string my_a_row = "aoeuidhtns-";
 const string my_z_row = "'qjkxbmwvz";
 
-const string my_top_row_shift = "";
+const string my_top_row_shift = "17531902468`";
 const string my_q_row_shift = ":<>PYFGCRL?^";
 const string my_a_row_shift = "AOEUIDHTNS@";
 const string my_z_row_shift = "\"QJKXBMWVZ";

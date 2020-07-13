@@ -1,4 +1,6 @@
 
+// vim: shiftwidth=2
+
 #include <iostream>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/positional_options.hpp>
@@ -64,18 +66,18 @@ int main(int argc, char **argv) {
   
   const int leftShift = 42;
   const int rightShift = 54;
-	const int leftAlt = 56;
+  const int leftAlt = 56;
   const int rightAlt = 100;
   const int capsLock = 58;
   const int leftWin = 125;
-	const int leftControl = 29;
-	const int rightControl = 97;
+  const int leftControl = 29;
+  const int rightControl = 97;
   
   RemappingHander remapping(full,
-		{ leftShift, rightShift },
-		{ rightAlt, capsLock, leftWin },
-		{ leftAlt, leftControl, rightControl }
-	);
+    { leftShift, rightShift },
+    { rightAlt, capsLock, leftWin },
+    { leftAlt, leftControl, rightControl }
+  );
   BasicMovementLoop movement;
   
   runDevInputLoop(keyboardFilePath, "send_b", trace, [&](DevInputEvent const& ev) {
